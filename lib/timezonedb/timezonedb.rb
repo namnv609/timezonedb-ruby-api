@@ -1,5 +1,6 @@
 require "rest_client"
 require "rb-optionsresolver"
+require "date"
 
 class TimeZoneDB
   ISO_3166_CODE_REGEXP = /^[a-z]{2}$/i
@@ -19,6 +20,12 @@ class TimeZoneDB
     options = validate_get_time_zone_params options
 
     execute "get-time-zone", options
+  end
+
+  def convert_time_zone options = Hash.new
+    options = validate_convert_time_zone_params options
+
+    execute "convert-time-zone", options
   end
 
   private
@@ -48,9 +55,9 @@ class TimeZoneDB
     resolver = OptionsResolver.new
 
     resolver.set_defaults({
-      fields: "all", zone: "", lat: "", lng: "", country: "",
-      region: "", city: "", page: "", time: ""
+      fields: "all", zone: "", lat: "", lng: "", country: "", city: ""
     })
+    .set_defined(%w(region page time))
     .set_required("by")
     .set_allowed_values("fields", Proc.new{|fields|
       available_fields = %w(countryCode countryName regionName cityName zoneName
@@ -72,6 +79,33 @@ class TimeZoneDB
     get_time_zone_params = resolver.resolve options
 
     options.reject{|elm| elm.to_s == "" || elm.is_a?(FalseClass)}
+  end
+
+  def validate_convert_time_zone_params options
+    resolver = OptionsResolver.new
+
+    resolver.set_defaults({fields: "all"})
+      .set_defined("time")
+      .set_required(%w(from to))
+      .set_allowed_values("fields", Proc.new{|fields|
+        available_fields = %w(fromZoneName fromAbbreviation fromTimestamp toZoneName
+          toAbbreviation toTimestamp offset)
+        field_arr = fields.split(",").map do |field|
+          available_fields.include? field
+        end
+
+        fields == "all" || !field_arr.include?(false)
+      })
+      .set_normalizer("time", Proc.new{|options, time|
+        raise InvalidParameter, "Time is invalid datetime format" unless [DateTime, Integer, Time, String].include?(time.class)
+
+        time = DateTime.parse time if time.is_a?(String)
+        time = time.to_time.to_i if [DateTime, Time].include?(time.class)
+
+        time
+      })
+
+    resolver.resolve options
   end
 
   def execute url, request_params, method = "get"

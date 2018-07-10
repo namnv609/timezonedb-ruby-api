@@ -1,4 +1,4 @@
-Gem::Specification do |spec|
+Gem::Specification.new do |spec|
   spec.name = "timezonedb-ruby-api"
   spec.version = "0.0.1"
   spec.authors = ["NamNV609"]
@@ -12,5 +12,5 @@ Gem::Specification do |spec|
   spec.required_ruby_version = ">= 1.9"
 
   spec.add_dependency "rest-client", "~> 1.8"
-  spec.add_dependency "rb-optionsresolver"
+  spec.add_dependency "rb-optionsresolver", "~> 0.0"
 end
